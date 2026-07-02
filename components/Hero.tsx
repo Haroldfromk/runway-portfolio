@@ -48,7 +48,7 @@ export default function Hero() {
               className="rw-mono-label rounded-lg px-4 py-2.5 text-[11px]"
               style={{ background: "var(--rw-green)", color: "var(--rw-bg)" }}
             >
-              iOS 18.5+ · watchOS
+              iOS 26+ · watchOS 11.5+
             </span>
             <span
               className="rw-mono-label rounded-lg border px-4 py-2.5 text-[11px]"
