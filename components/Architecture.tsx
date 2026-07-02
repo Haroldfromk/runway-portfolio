@@ -1,14 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { SiteDictionary } from "@/lib/i18n/schema";
 
 type TabId = "actor" | "phase" | "mirroring";
-
-const tabs: { id: TabId; label: string; eyebrow: string }[] = [
-  { id: "actor", label: "RunningCenter Actor", eyebrow: "동시성" },
-  { id: "phase", label: "FlightPhase 상태 머신", eyebrow: "상태 관리" },
-  { id: "mirroring", label: "Watch 미러링", eyebrow: "기기 간 동기화" },
-];
 
 function Node({
   children,
@@ -42,26 +37,34 @@ function VArrow({ color = "var(--rw-border)" }: { color?: string }) {
   );
 }
 
-function Quote({ children }: { children: React.ReactNode }) {
+function Quote({ label, children }: { label: string; children: React.ReactNode[] | string }) {
+  const lines = Array.isArray(children) ? children : [children];
   return (
     <div
       className="mt-8 rounded-xl border-l-4 px-5 py-4"
       style={{ borderColor: "var(--rw-green)", background: "var(--rw-panel2)" }}
     >
       <span className="rw-mono-label text-[9px]" style={{ color: "var(--rw-green)" }}>
-        왜 이렇게 설계했는가
+        {label}
       </span>
       <p
         className="mt-2 text-sm leading-relaxed italic sm:text-base"
         style={{ color: "var(--rw-text)" }}
       >
-        &ldquo;{children}&rdquo;
+        &ldquo;
+        {lines.map((line, i) => (
+          <span key={i}>
+            {line}
+            {i < lines.length - 1 && <br />}
+          </span>
+        ))}
+        &rdquo;
       </p>
     </div>
   );
 }
 
-function ActorDiagram() {
+function ActorDiagram({ dict }: { dict: SiteDictionary["architecture"] }) {
   const sources = ["CoreLocation", "HealthKit", "WatchConnectivity"];
   return (
     <>
@@ -82,16 +85,12 @@ function ActorDiagram() {
         <VArrow />
         <Node>ViewModel (@MainActor) → SwiftUI</Node>
       </div>
-      <Quote>
-        GPS, 심박수, 케이던스가 동시에 들어오므로 상태 무결성을 보장하기
-        위해 RunningCenter Actor를 두고 모든 러닝 계산을 단일 격리 영역에서
-        처리했습니다.
-      </Quote>
+      <Quote label={dict.quoteLabel}>{dict.actor.quote}</Quote>
     </>
   );
 }
 
-function PhaseDiagram() {
+function PhaseDiagram({ dict }: { dict: SiteDictionary["architecture"] }) {
   const phases = [
     { id: "preflight", label: "PREFLIGHT" },
     { id: "takeoff", label: "TAKEOFF" },
@@ -123,64 +122,45 @@ function PhaseDiagram() {
           <Node>iPhone PFD</Node>
         </div>
       </div>
-      <Quote>
-        각 화면이 독립적으로 상태를 판단하면 화면 간 불일치가 생깁니다.
-        <br /> 
-        항공기 운항 단계에서 착안한 FlightPhase 하나를 앱 전체가 참조하게
-        해서, Dynamic Island와 Watch, iPhone PFD가 항상 같은 상태를
-        보여주도록 했습니다.
-      </Quote>
+      <Quote label={dict.quoteLabel}>{dict.phase.quote}</Quote>
     </>
   );
 }
 
-function MirroringDiagram() {
+function MirroringDiagram({ dict }: { dict: SiteDictionary["architecture"] }) {
   return (
     <>
       <div className="flex min-w-[560px] flex-col items-center gap-5">
-        <div className="grid w-full grid-cols-2 gap-6">
+        <div className="flex w-full items-center justify-center gap-4">
           <div className="flex flex-col items-center gap-2">
             <Node variant="highlight">Watch (startOrigin: .local)</Node>
             <span className="rw-mono-label text-[9px]" style={{ color: "var(--rw-muted)" }}>
-              GPS + 계산 담당
+              {dict.mirroring.leadingLabel}
             </span>
           </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <svg width="120" height="40" viewBox="0 0 120 40">
+              <path d="M0,30 L105,30" stroke="var(--rw-green)" strokeWidth="1.5" fill="none" />
+              <path d="M96,24 L105,30 L96,36" stroke="var(--rw-green)" strokeWidth="1.5" fill="none" />
+            </svg>
+            <Node>{dict.mirroring.payloadLabel}</Node>
+          </div>
+
           <div className="flex flex-col items-center gap-2">
             <Node>iPhone (startOrigin: .remote)</Node>
             <span className="rw-mono-label text-[9px]" style={{ color: "var(--rw-muted)" }}>
-              수신 + 표시만
+              {dict.mirroring.followingLabel}
             </span>
           </div>
         </div>
-        <svg width="100%" height="30" viewBox="0 0 300 30" className="max-w-xs">
-          <path d="M70,4 L230,4" stroke="var(--rw-green)" strokeWidth="1.5" fill="none" />
-          <path d="M220,-2 L230,4 L220,10" stroke="var(--rw-green)" strokeWidth="1.5" fill="none" />
-        </svg>
-        <Node>FlightData (elapsedTime 포함, 3초 throttle)</Node>
       </div>
-      <Quote>
-        처음에는 iPhone과 Watch가 미러링 중에도 각자 GPS를 잡고 있었습니다.
-        <br /> 
-        주도 기기(startOrigin) 하나만 위치를 추적하고 계산 결과를 상대에게
-        보내는 구조로 바꾸니, 중복 연산도 없어지고 화면 전환 지연도
-        사라졌습니다.
-      </Quote>
+      <Quote label={dict.quoteLabel}>{dict.mirroring.quote}</Quote>
     </>
   );
 }
 
-const stack = [
-  { label: "SwiftUI", role: "UI" },
-  { label: "@MainActor + @Observable", role: "상태관리" },
-  { label: "RunningCenter (Actor)", role: "동시성" },
-  { label: "AsyncStream", role: "센서 → ViewModel" },
-  { label: "FlightPhase enum", role: "상태 머신" },
-  { label: "WatchConnectivity", role: "iPhone ↔ Watch" },
-  { label: "SwiftData", role: "저장" },
-  { label: "MapKit + MapPolyline", role: "경로 시각화" },
-];
-
-export default function Architecture() {
+export default function Architecture({ dict }: { dict: SiteDictionary["architecture"] }) {
   const [active, setActive] = useState<TabId>("actor");
 
   return (
@@ -188,17 +168,21 @@ export default function Architecture() {
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
         <div className="mb-10 max-w-xl">
           <span className="rw-mono-label text-[11px]" style={{ color: "var(--rw-green)" }}>
-            Under The Hood
+            {dict.eyebrow}
           </span>
           <h2
             className="mt-3 text-3xl sm:text-4xl"
             style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--rw-text)" }}
           >
-            설계 결정 세 가지
+            {dict.title}
           </h2>
           <p className="mt-4 text-sm leading-relaxed sm:text-base" style={{ color: "var(--rw-muted)" }}>
-            동시성 처리, 상태 관리, 기기 간 동기화 - RunWay를 만들며 가장
-            많이 고민한 세 가지 지점입니다.
+            {dict.description.map((line, i) => (
+              <span key={i}>
+                {line}
+                {i < dict.description.length - 1 && <br />}
+              </span>
+            ))}
           </p>
         </div>
 
@@ -207,7 +191,7 @@ export default function Architecture() {
           className="mb-6 flex gap-2 overflow-x-auto border-b pb-px"
           style={{ borderColor: "var(--rw-border)" }}
         >
-          {tabs.map((t) => {
+          {dict.tabs.map((t) => {
             const isActive = active === t.id;
             return (
               <button
@@ -246,15 +230,15 @@ export default function Architecture() {
           style={{ borderColor: "var(--rw-border)", background: "var(--rw-panel)" }}
         >
           <div className="flex flex-col items-center">
-            {active === "actor" && <ActorDiagram />}
-            {active === "phase" && <PhaseDiagram />}
-            {active === "mirroring" && <MirroringDiagram />}
+            {active === "actor" && <ActorDiagram dict={dict} />}
+            {active === "phase" && <PhaseDiagram dict={dict} />}
+            {active === "mirroring" && <MirroringDiagram dict={dict} />}
           </div>
         </div>
 
         {/* tech stack grid */}
         <div className="mt-10 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {stack.map((t) => (
+          {dict.stack.map((t) => (
             <div
               key={t.label}
               className="flex items-center justify-between rounded-lg border px-4 py-3"

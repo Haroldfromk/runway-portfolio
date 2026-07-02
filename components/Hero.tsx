@@ -1,6 +1,7 @@
 import PFDWidget from "./PFDWidget";
+import type { SiteDictionary } from "@/lib/i18n/schema";
 
-export default function Hero() {
+export default function Hero({ dict }: { dict: SiteDictionary["hero"] }) {
   return (
     <section
       className="relative overflow-hidden border-b"
@@ -20,7 +21,7 @@ export default function Hero() {
           >
             <span className="h-1.5 w-1.5 rounded-full rw-blink" style={{ background: "var(--rw-green)" }} />
             <span className="rw-mono-label text-[10px]" style={{ color: "var(--rw-muted)" }}>
-              Ex-항공정비사가 설계한 러닝 앱
+              {dict.badge}
             </span>
           </div>
 
@@ -28,19 +29,22 @@ export default function Hero() {
             className="text-4xl leading-[1.1] sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "var(--font-display)", fontWeight: 800, color: "var(--rw-text)" }}
           >
-            Turn Every
+            {dict.titleLine1}
             <br />
-            Run Into A{" "}
-            <span style={{ color: "var(--rw-green)" }}>Flight.</span>
+            {dict.titleLine2Prefix}{" "}
+            <span style={{ color: "var(--rw-green)" }}>{dict.titleLine2Accent}</span>
           </h1>
 
           <p
             className="mt-6 max-w-md text-base leading-relaxed sm:text-lg"
             style={{ color: "var(--rw-muted)" }}
           >
-            A320F 정비사 출신 개발자가 만든 iOS 러닝 트래커. 
-            <br /> 
-            GPS, 심박수, 케이던스를 계기판처럼 읽고, 페이스 이탈을 GPWS 경보로 알려줍니다.
+            {dict.description.map((line, i) => (
+              <span key={i}>
+                {line}
+                {i < dict.description.length - 1 && <br />}
+              </span>
+            ))}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -48,13 +52,13 @@ export default function Hero() {
               className="rw-mono-label rounded-lg px-4 py-2.5 text-[11px]"
               style={{ background: "var(--rw-green)", color: "var(--rw-bg)" }}
             >
-              iOS 26+ · watchOS 11.5+
+              {dict.badgeOs}
             </span>
             <span
               className="rw-mono-label rounded-lg border px-4 py-2.5 text-[11px]"
               style={{ borderColor: "var(--rw-border)", color: "var(--rw-muted)" }}
             >
-              SwiftUI · Actor · AsyncStream
+              {dict.badgeStack}
             </span>
           </div>
         </div>

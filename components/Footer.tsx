@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Rss } from "lucide-react";
+import type { SiteDictionary } from "@/lib/i18n/schema";
 
 function GithubIcon({ size = 18 }: { size?: number }) {
   return (
@@ -9,7 +9,7 @@ function GithubIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export default function Footer() {
+export default function Footer({ dict }: { dict: SiteDictionary["footer"] }) {
   return (
     <footer className="px-5 py-14 sm:px-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center">
@@ -17,12 +17,15 @@ export default function Footer() {
           className="text-lg tracking-[0.2em]"
           style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--rw-text)" }}
         >
-          CLEARED FOR TAKE-OFF
+          {dict.tagline}
         </div>
         <p className="max-w-md text-sm leading-relaxed" style={{ color: "var(--rw-muted)" }}>
-          전직 항공정비사의 철학이 담긴 정밀 러닝 솔루션. 
-          <br /> 
-          Rotate와 함께 비행을 시작하세요.
+          {dict.description.map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < dict.description.length - 1 && <br />}
+            </span>
+          ))}
         </p>
 
         {/* social links */}
@@ -35,7 +38,7 @@ export default function Footer() {
             style={{ borderColor: "var(--rw-border)", color: "var(--rw-muted)" }}
           >
             <GithubIcon size={16} />
-            <span className="rw-mono-label text-[11px]">GitHub</span>
+            <span className="rw-mono-label text-[11px]">{dict.githubLabel}</span>
           </a>
           <a
             href="https://haroldfromk.github.io"
@@ -45,11 +48,11 @@ export default function Footer() {
             style={{ borderColor: "var(--rw-border)", color: "var(--rw-muted)" }}
           >
             <Rss size={16} />
-            <span className="rw-mono-label text-[11px]">Blog</span>
+            <span className="rw-mono-label text-[11px]">{dict.blogLabel}</span>
           </a>
         </div>
         <p className="mt-4 text-[11px]" style={{ color: "var(--rw-border)" }}>
-          RunWay - Turn Every Run Into A Flight
+          {dict.bottomLine}
         </p>
       </div>
     </footer>

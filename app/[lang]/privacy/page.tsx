@@ -1,71 +1,64 @@
-"use client";
-
-import { useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import { privacyContentKo, privacyContentEn, privacyContentJa } from "@/lib/privacy";
+import { getDictionary } from "@/lib/i18n";
+import { isValidLang, DEFAULT_LANG, type Lang } from "@/lib/i18n/types";
+import { getPrivacyContent } from "@/lib/privacy";
 
-type Lang = "ko" | "en" | "ja";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang: rawLang } = await params;
+  const lang: Lang = isValidLang(rawLang) ? rawLang : DEFAULT_LANG;
+  return {
+    title: `Privacy Policy - RunWay`,
+    description:
+      lang === "ko"
+        ? "RunWay 개인정보 처리방침"
+        : lang === "ja"
+          ? "RunWay プライバシーポリシー"
+          : "RunWay Privacy Policy",
+  };
+}
 
-export default function PrivacyClient() {
-  const [lang, setLang] = useState<Lang>("ko");
-  const content =
-    lang === "ko" ? privacyContentKo : lang === "en" ? privacyContentEn : privacyContentJa;
+export default async function PrivacyPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang: rawLang } = await params;
+  const lang: Lang = isValidLang(rawLang) ? rawLang : DEFAULT_LANG;
+  const dict = getDictionary(lang);
+  const content = getPrivacyContent(lang);
 
   return (
     <main>
-      <Nav />
+      <Nav lang={lang} dict={dict.nav} />
 
       <section className="border-b" style={{ borderColor: "var(--rw-border)" }}>
         <div className="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
           <Link
-            href="/"
+            href={`/${lang}`}
             className="mb-8 inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-70"
             style={{ color: "var(--rw-muted)" }}
           >
             <ArrowLeft size={14} />
-            RunWay 홈으로
+            {dict.troubleshootingPage.backLabel}
           </Link>
 
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <span className="rw-mono-label text-[11px]" style={{ color: "var(--rw-green)" }}>
-                Privacy Policy
-              </span>
-              <h1
-                className="mt-3 text-3xl sm:text-4xl"
-                style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--rw-text)" }}
-              >
-                개인정보 처리방침
-              </h1>
-            </div>
-
-            {/* language toggle */}
-            <div
-              className="flex shrink-0 gap-1 rounded-full border p-1"
-              style={{ borderColor: "var(--rw-border)", background: "var(--rw-panel)" }}
-              role="tablist"
-              aria-label="Language"
-            >
-              {(["ko", "en", "ja"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className="rw-mono-label rounded-full px-3.5 py-1.5 text-[11px] transition-colors"
-                  style={{
-                    background: lang === l ? "var(--rw-green)" : "transparent",
-                    color: lang === l ? "var(--rw-bg)" : "var(--rw-muted)",
-                  }}
-                >
-                  {l === "ko" ? "한국어" : l === "en" ? "English" : "日本語"}
-                </button>
-              ))}
-            </div>
-          </div>
+          <span className="rw-mono-label text-[11px]" style={{ color: "var(--rw-green)" }}>
+            Privacy Policy
+          </span>
+          <h1
+            className="mt-3 text-3xl sm:text-4xl"
+            style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--rw-text)" }}
+          >
+            {dict.nav.privacy}
+          </h1>
 
           <p className="mt-4 text-xs" style={{ color: "var(--rw-muted)" }}>
             {content.lastUpdated}
@@ -149,7 +142,7 @@ export default function PrivacyClient() {
         </div>
       </section>
 
-      <Footer />
+      <Footer dict={dict.footer} />
     </main>
   );
 }

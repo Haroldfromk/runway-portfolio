@@ -3,15 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SUPPORTED_LANGS, langLabel, type Lang } from "@/lib/i18n/types";
+import type { SiteDictionary } from "@/lib/i18n/schema";
 
 const sectionIds = ["concept", "screens", "architecture"];
 
-export default function Nav() {
+export default function Nav({ lang, dict }: { lang: Lang; dict: SiteDictionary["nav"] }) {
   const pathname = usePathname();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  const homePath = `/${lang}`;
+  const isHome = pathname === homePath;
+
   useEffect(() => {
-    if (pathname !== "/") {
+    if (!isHome) {
       setActiveSection(null);
       return;
     }
@@ -33,18 +38,25 @@ export default function Nav() {
     els.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [pathname]);
+  }, [pathname, isHome]);
 
-  const isSectionActive = (id: string) => pathname === "/" && activeSection === id;
-  const isPageActive = (path: string) => pathname === path;
+  const isSectionActive = (id: string) => isHome && activeSection === id;
+  const isPageActive = (path: string) => pathname === `/${lang}${path}`;
+
+  // Replace the leading /{lang} segment so switching language preserves the
+  // current page (e.g. /ko/support -> /en/support).
+  const pathForLang = (targetLang: Lang) => {
+    const rest = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "") || "";
+    return `/${targetLang}${rest}`;
+  };
 
   return (
     <header
       className="sticky top-0 z-50 border-b backdrop-blur-md"
       style={{ borderColor: "var(--rw-border)", background: "rgba(11,14,20,0.85)" }}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
+        <Link href={homePath} className="flex shrink-0 items-center gap-2">
           <span
             className="h-2 w-2 rounded-full"
             style={{ background: "var(--rw-green)" }}
@@ -56,13 +68,14 @@ export default function Nav() {
             RUNWAY
           </span>
         </Link>
-        <nav className="flex items-center gap-5 text-xs">
+
+        <nav className="flex items-center gap-5 overflow-x-auto text-xs">
           <Link
-            href="/#concept"
-            className="rw-mono-label relative pb-1 transition-colors hover:opacity-100"
+            href={`${homePath}#concept`}
+            className="rw-mono-label relative shrink-0 pb-1 transition-colors hover:opacity-100"
             style={{ color: isSectionActive("concept") ? "var(--rw-green)" : "var(--rw-muted)" }}
           >
-            Concept
+            {dict.concept}
             {isSectionActive("concept") && (
               <span
                 className="absolute -bottom-[1px] left-0 h-[1.5px] w-full"
@@ -71,11 +84,11 @@ export default function Nav() {
             )}
           </Link>
           <Link
-            href="/#screens"
-            className="rw-mono-label relative pb-1 transition-colors hover:opacity-100"
+            href={`${homePath}#screens`}
+            className="rw-mono-label relative shrink-0 pb-1 transition-colors hover:opacity-100"
             style={{ color: isSectionActive("screens") ? "var(--rw-green)" : "var(--rw-muted)" }}
           >
-            Screens
+            {dict.screens}
             {isSectionActive("screens") && (
               <span
                 className="absolute -bottom-[1px] left-0 h-[1.5px] w-full"
@@ -84,11 +97,11 @@ export default function Nav() {
             )}
           </Link>
           <Link
-            href="/#architecture"
-            className="rw-mono-label relative pb-1 transition-colors hover:opacity-100"
+            href={`${homePath}#architecture`}
+            className="rw-mono-label relative shrink-0 pb-1 transition-colors hover:opacity-100"
             style={{ color: isSectionActive("architecture") ? "var(--rw-green)" : "var(--rw-muted)" }}
           >
-            Architecture
+            {dict.architecture}
             {isSectionActive("architecture") && (
               <span
                 className="absolute -bottom-[1px] left-0 h-[1.5px] w-full"
@@ -97,11 +110,11 @@ export default function Nav() {
             )}
           </Link>
           <Link
-            href="/privacy"
-            className="rw-mono-label relative pb-1 transition-colors hover:opacity-100"
+            href={`${homePath}/privacy`}
+            className="rw-mono-label relative shrink-0 pb-1 transition-colors hover:opacity-100"
             style={{ color: isPageActive("/privacy") ? "var(--rw-green)" : "var(--rw-muted)" }}
           >
-            Privacy
+            {dict.privacy}
             {isPageActive("/privacy") && (
               <span
                 className="absolute -bottom-[1px] left-0 h-[1.5px] w-full"
@@ -110,11 +123,11 @@ export default function Nav() {
             )}
           </Link>
           <Link
-            href="/support"
-            className="rw-mono-label relative pb-1 transition-colors hover:opacity-100"
+            href={`${homePath}/support`}
+            className="rw-mono-label relative shrink-0 pb-1 transition-colors hover:opacity-100"
             style={{ color: isPageActive("/support") ? "var(--rw-green)" : "var(--rw-muted)" }}
           >
-            Support
+            {dict.support}
             {isPageActive("/support") && (
               <span
                 className="absolute -bottom-[1px] left-0 h-[1.5px] w-full"
@@ -123,17 +136,41 @@ export default function Nav() {
             )}
           </Link>
           <Link
-            href="/troubleshooting"
-            className="rw-mono-label rounded-full border px-3 py-1.5 transition-colors"
+            href={`${homePath}/troubleshooting`}
+            className="rw-mono-label shrink-0 rounded-full border px-3 py-1.5 transition-colors"
             style={{
               borderColor: isPageActive("/troubleshooting") ? "var(--rw-green)" : "var(--rw-border)",
               background: isPageActive("/troubleshooting") ? "var(--rw-green)" : "transparent",
               color: isPageActive("/troubleshooting") ? "var(--rw-bg)" : "var(--rw-green)",
             }}
           >
-            Maintenance Log
+            {dict.maintenanceLog}
           </Link>
         </nav>
+
+        {/* language toggle */}
+        <div
+          className="flex shrink-0 gap-0.5 rounded-full border p-0.5"
+          style={{ borderColor: "var(--rw-border)", background: "var(--rw-panel)" }}
+          role="tablist"
+          aria-label="Language"
+        >
+          {SUPPORTED_LANGS.map((l) => (
+            <Link
+              key={l}
+              href={pathForLang(l)}
+              role="tab"
+              aria-selected={lang === l}
+              className="rw-mono-label rounded-full px-2.5 py-1 text-[10px] transition-colors"
+              style={{
+                background: lang === l ? "var(--rw-green)" : "transparent",
+                color: lang === l ? "var(--rw-bg)" : "var(--rw-muted)",
+              }}
+            >
+              {l.toUpperCase()}
+            </Link>
+          ))}
+        </div>
       </div>
     </header>
   );

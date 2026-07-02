@@ -130,3 +130,9 @@ export const privacyContentJa: PrivacyContent = {
   contactLabel: "メール",
   contactEmail: "dongik369@naver.com",
 };
+
+export function getPrivacyContent(lang: "ko" | "en" | "ja"): PrivacyContent {
+  if (lang === "en") return privacyContentEn;
+  if (lang === "ja") return privacyContentJa;
+  return privacyContentKo;
+}

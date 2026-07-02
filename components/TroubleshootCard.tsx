@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { TroubleshootCase } from "@/lib/data";
+import type { TroubleshootCase } from "@/lib/i18n/schema";
 
 const tagColor: Record<string, string> = {
   FINDING: "var(--rw-blue)",
@@ -13,7 +13,13 @@ const tagColor: Record<string, string> = {
   APPROACH: "var(--rw-muted)",
 };
 
-export default function TroubleshootCard({ item }: { item: TroubleshootCase }) {
+export default function TroubleshootCard({
+  item,
+  verdictLabel,
+}: {
+  item: TroubleshootCase;
+  verdictLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const isLimitation = item.status === "KNOWN LIMITATION";
   const statusColor = isLimitation ? "var(--rw-amber)" : "var(--rw-green)";
@@ -49,7 +55,7 @@ export default function TroubleshootCard({ item }: { item: TroubleshootCase }) {
             <span
               className="rw-mono-label rounded-full px-2.5 py-0.5 text-[9px]"
               style={{
-                color: isLimitation ? "#0B0E14" : "#0B0E14",
+                color: "#0B0E14",
                 background: statusColor,
               }}
             >
@@ -112,7 +118,7 @@ export default function TroubleshootCard({ item }: { item: TroubleshootCase }) {
                 style={{ borderColor: "var(--rw-amber)", background: "var(--rw-panel2)" }}
               >
                 <span className="rw-mono-label text-[9px]" style={{ color: "var(--rw-amber)" }}>
-                  FINAL VERDICT
+                  {verdictLabel}
                 </span>
                 <p className="mt-1.5 text-xs leading-relaxed sm:text-sm" style={{ color: "var(--rw-text)" }}>
                   {item.verdict}
