@@ -1,6 +1,6 @@
-# RunWay Portfolio
+# RunWay Project
 
-RunWay 앱 포트폴리오 웹사이트. Next.js 16 (App Router) + Tailwind v4.
+RunWay 앱 프로젝트 웹사이트. Next.js 16 (App Router) + Tailwind v4.
 한국어 / English / 日本語 3개 언어를 지원합니다 (URL 경로 기반: `/ko`, `/en`, `/ja`).
 
 ## 로컬 실행
