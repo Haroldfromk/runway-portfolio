@@ -43,7 +43,7 @@ export default async function PrivacyPage({
         <div className="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
           <Link
             href={`/${lang}`}
-            className="mb-8 inline-flex items-center gap-1.5 text-xs transition-opacity hover:opacity-70"
+            className="mb-8 flex w-fit items-center gap-1.5 text-xs transition-opacity hover:opacity-70"
             style={{ color: "var(--rw-muted)" }}
           >
             <ArrowLeft size={14} />
