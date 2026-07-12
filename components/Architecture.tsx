@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { SiteDictionary } from "@/lib/i18n/schema";
 
-type TabId = "actor" | "phase" | "mirroring";
+type TabId = "actor" | "phase" | "mirroring" | "gpws";
 
 function Node({
   children,
@@ -165,6 +165,32 @@ function MirroringDiagram({ dict }: { dict: SiteDictionary["architecture"] }) {
   );
 }
 
+function GpwsDiagram({ dict }: { dict: SiteDictionary["architecture"] }) {
+  return (
+    <>
+      <div className="flex min-w-[560px] flex-col items-center gap-6">
+        <span className="rw-mono-label text-[9px]" style={{ color: "var(--rw-muted)" }}>
+          target pace − deviation · · · target pace · · · target pace + deviation
+        </span>
+        <div className="flex items-center gap-2">
+          <Node>{dict.gpws.overspeedLabel}</Node>
+          <svg width="20" height="4" viewBox="0 0 20 4">
+            <path d="M0,2 L20,2" stroke="var(--rw-border)" strokeWidth="1.5" />
+          </svg>
+          <Node variant="highlight">{dict.gpws.normalLabel}</Node>
+          <svg width="20" height="4" viewBox="0 0 20 4">
+            <path d="M0,2 L20,2" stroke="var(--rw-border)" strokeWidth="1.5" />
+          </svg>
+          <Node>{dict.gpws.sinkRateLabel}</Node>
+        </div>
+        <VArrow />
+        <Node variant="highlight">{dict.gpws.minimumsLabel}</Node>
+      </div>
+      <Quote label={dict.quoteLabel}>{dict.gpws.quote}</Quote>
+    </>
+  );
+}
+
 export default function Architecture({ dict }: { dict: SiteDictionary["architecture"] }) {
   const [active, setActive] = useState<TabId>("actor");
 
@@ -238,6 +264,7 @@ export default function Architecture({ dict }: { dict: SiteDictionary["architect
             {active === "actor" && <ActorDiagram dict={dict} />}
             {active === "phase" && <PhaseDiagram dict={dict} />}
             {active === "mirroring" && <MirroringDiagram dict={dict} />}
+            {active === "gpws" && <GpwsDiagram dict={dict} />}
           </div>
         </div>
 

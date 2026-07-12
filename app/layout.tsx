@@ -17,6 +17,7 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "RunWay - Turn Every Run Into A Flight",
   description:
     "전직 항공정비사가 설계한 정밀 운항 기반 러닝 트래커. GPS, 심박수, 케이던스를 계기판처럼 읽는 러닝 경험.",
@@ -25,6 +26,12 @@ export const metadata: Metadata = {
     description:
       "전직 항공정비사가 설계한 정밀 운항 기반 러닝 트래커.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RunWay - Turn Every Run Into A Flight",
+    description:
+      "전직 항공정비사가 설계한 정밀 운항 기반 러닝 트래커.",
   },
 };
 

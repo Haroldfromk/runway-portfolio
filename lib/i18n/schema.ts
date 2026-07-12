@@ -16,7 +16,7 @@ export interface ScreenShotMeta {
 }
 
 export interface ArchTab {
-  id: "actor" | "phase" | "mirroring";
+  id: "actor" | "phase" | "mirroring" | "gpws";
   label: string;
   eyebrow: string;
 }
@@ -69,8 +69,10 @@ export interface SiteDictionary {
     titleLine2Prefix: string;
     titleLine2Accent: string;
     description: string[];
+    comingSoon: string;
     badgeOs: string;
     badgeStack: string;
+    androidBadge: string;
   };
   concept: {
     eyebrow: string;
@@ -102,6 +104,13 @@ export interface SiteDictionary {
       followingLabel: string;
       payloadLabel: string;
       quote: string[];
+    };
+    gpws: {
+      overspeedLabel: string;
+      normalLabel: string;
+      sinkRateLabel: string;
+      minimumsLabel: string;
+      quote: string;
     };
     stack: StackItem[];
   };

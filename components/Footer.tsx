@@ -41,7 +41,7 @@ export default function Footer({ dict }: { dict: SiteDictionary["footer"] }) {
             <span className="rw-mono-label text-[11px]">{dict.githubLabel}</span>
           </a>
           <a
-            href="https://haroldfromk.github.io"
+            href="https://haroldfromk.github.io/categories/runway/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 rounded-full border px-4 py-2 transition-colors hover:border-[var(--rw-green)]"

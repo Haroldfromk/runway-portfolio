@@ -18,8 +18,10 @@ export const en: SiteDictionary = {
       "An iOS running tracker built by a developer who used to maintain A320F aircraft.",
       "Read your GPS, heart rate, and cadence like a flight instrument, and get pace deviations as GPWS-style warnings.",
     ],
+    comingSoon: "Coming soon to the App Store",
     badgeOs: "iOS 26+ · watchOS 11.5+",
     badgeStack: "SwiftUI · Actor · AsyncStream",
+    androidBadge: "Android port in progress",
   },
   concept: {
     eyebrow: "Flight Operations",
@@ -83,16 +85,17 @@ export const en: SiteDictionary = {
   },
   architecture: {
     eyebrow: "Under The Hood",
-    title: "Three Design Decisions",
+    title: "Four Design Decisions",
     description: [
-      "Concurrency, state management, and cross-device sync - the three areas",
-      "I thought hardest about while building RunWay.",
+      "Concurrency, state management, cross-device sync, and GPWS logic - the",
+      "four areas I thought hardest about while building RunWay.",
     ],
     quoteLabel: "Why it's designed this way",
     tabs: [
       { id: "actor", label: "RunningCenter Actor", eyebrow: "Concurrency" },
       { id: "phase", label: "FlightPhase State Machine", eyebrow: "State management" },
       { id: "mirroring", label: "Watch Mirroring", eyebrow: "Cross-device sync" },
+      { id: "gpws", label: "GPWS Threshold Logic", eyebrow: "Pace deviation" },
     ],
     actor: {
       quote:
@@ -112,6 +115,14 @@ export const en: SiteDictionary = {
         "At first, both the iPhone and the Watch were tracking GPS on their own even while mirroring.",
         "Switching to a structure where only the leading device (startOrigin) tracks location and sends the computed results to the other eliminated the duplicate computation and the lag when switching screens.",
       ],
+    },
+    gpws: {
+      overspeedLabel: "OVERSPEED — faster than target",
+      normalLabel: "Within tolerance",
+      sinkRateLabel: "SINK RATE — slower than target",
+      minimumsLabel: "MINIMUMS — last 50m before target",
+      quote:
+        "GPWS has to react the instant pace drifts outside the target ± tolerance, so every location update recalculates the current pace to check for SINK RATE or OVERSPEED. Inside the last 50m before the target distance, MINIMUMS takes priority over pace, so the 'almost there' signal never gets missed.",
     },
     stack: [
       { label: "SwiftUI", role: "UI" },
@@ -388,6 +399,74 @@ export const en: SiteDictionary = {
       ],
       verdict:
         "Concluded that HKWorkoutSession is a healthd (system daemon) level resource that app code can't fully control. os_log/Console.app tracing pinpointed the exact cause, but with no fix possible without side effects, this was documented as a known limitation for v1.0.",
+    },
+    {
+      id: "mirroring-race-condition",
+      number: "07",
+      title: "Watch-led mirroring race condition",
+      status: "RESOLVED",
+      squawk: "GPS never acquired in Watch-led runs only; a rebuild with no code changes flipped the symptom to the opposite device",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "The symptom moved",
+          body: "The issues seen in phone-led mirroring (Watch display not updating, stop not syncing) disappeared after a rebuild with zero code changes. In their place, Watch-led mirroring started showing a new symptom: location never acquired at all.",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "Async assignment vs. sync check",
+          body: "The startOrigin = .local assignment inside updatePhase(.cruise) sits inside a Task {}, making it async. The very next line calls start(), which checks that value once, synchronously. If the check runs before the assignment lands, GPS never turns on for the rest of that run.",
+        },
+        {
+          tag: "DISCOVERY",
+          title: "Why the iPhone was unaffected",
+          body: "Same call order, yet the iPhone never hit this. Adding the pre-flight check to TakeoffView had it call prepareTracking() ahead of time, so GPS was already running by the time start() ran - the race never had a chance to matter. The Watch had no such pre-step, so it was fully exposed.",
+        },
+        {
+          tag: "ACTION",
+          title: "Removing the race entirely",
+          body: "Brought the same prepareTracking()/stopTracking() pattern to the Watch. Split the GPS-start logic out of start() completely, so start() no longer reads startOrigin at all.",
+        },
+        {
+          tag: "RESULT",
+          title: "Unified platform architecture",
+          body: "Added a didStartFlight flag to distinguish a normal ROTATE entry from bailing out mid-countdown. iOS and Watch now share the same architecture, which has made it easier to read the two platforms' code side by side since.",
+        },
+      ],
+    },
+    {
+      id: "pace-corruption",
+      number: "08",
+      title: "A stored inf pace corrupting the calendar's monthly average",
+      status: "RESOLVED",
+      squawk: "The live pace on screen looked fine, but the monthly/weekly average pace always came out as --:--",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "Screen and storage disagreed",
+          body: "The live PFD pace calculation already had an isFinite guard, so the screen safely showed --'--\" whenever the math broke down. saveRunningData(), which persists to SwiftData, had no such guard.",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "inf propagating downstream",
+          body: "Dividing by zero distance returns inf in Swift - no crash, just a silently invalid Double. That inf got saved as-is, and a single inf mixed into the reduce that computes the monthly average was enough to corrupt the entire sum, wiping out that month's average.",
+        },
+        {
+          tag: "ACTION",
+          title: "Guarding both write and read paths",
+          body: "Added an isFinite guard at save time so unrepresentable values are stored as 0, plus a second isFinite filter at aggregation time as a backstop. WatchPFDView.swift had the identical calculation, so the same guard went there too.",
+        },
+        {
+          tag: "FINDING",
+          title: "A follow-up bug",
+          body: "Found a separate issue where stopping a run seconds after starting produced a wildly spiked pace. Not inf this time - just an unrealistically large finite value from dividing a tiny distance by a tiny time, which slipped right past the isFinite guard.",
+        },
+        {
+          tag: "RESULT",
+          title: "Thresholds and cleanup",
+          body: "Added a minimum valid distance (50m) and a realistic pace ceiling (30 min/km). Deleted the 14 already-corrupted records with a one-off cleanup script. The lesson: 'invisible on screen' isn't the same as 'safe' - what actually gets persisted needs its own guarantee.",
+        },
+      ],
     },
   ],
 };

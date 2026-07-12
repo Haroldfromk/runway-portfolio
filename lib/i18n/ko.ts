@@ -18,8 +18,10 @@ export const ko: SiteDictionary = {
       "A320F 정비사 출신 개발자가 만든 iOS 러닝 트래커.",
       "GPS, 심박수, 케이던스를 계기판처럼 읽고, 페이스 이탈을 GPWS 경보로 알려줍니다.",
     ],
+    comingSoon: "App Store 출시 준비 중",
     badgeOs: "iOS 26+ · watchOS 11.5+",
     badgeStack: "SwiftUI · Actor · AsyncStream",
+    androidBadge: "Android 포팅 진행 중",
   },
   concept: {
     eyebrow: "Flight Operations",
@@ -83,16 +85,17 @@ export const ko: SiteDictionary = {
   },
   architecture: {
     eyebrow: "Under The Hood",
-    title: "설계 결정 세 가지",
+    title: "설계 결정 네 가지",
     description: [
-      "동시성 처리, 상태 관리, 기기 간 동기화 - RunWay를 만들며 가장",
-      "많이 고민한 세 가지 지점입니다.",
+      "동시성 처리, 상태 관리, 기기 간 동기화, GPWS 판정 로직 - RunWay를",
+      "만들며 가장 많이 고민한 네 가지 지점입니다.",
     ],
     quoteLabel: "왜 이렇게 설계했는가",
     tabs: [
       { id: "actor", label: "RunningCenter Actor", eyebrow: "동시성" },
       { id: "phase", label: "FlightPhase 상태 머신", eyebrow: "상태 관리" },
       { id: "mirroring", label: "Watch 미러링", eyebrow: "기기 간 동기화" },
+      { id: "gpws", label: "GPWS 판정 로직", eyebrow: "페이스 이탈 감지" },
     ],
     actor: {
       quote:
@@ -112,6 +115,14 @@ export const ko: SiteDictionary = {
         "처음에는 iPhone과 Watch가 미러링 중에도 각자 GPS를 잡고 있었습니다.",
         "주도 기기(startOrigin) 하나만 위치를 추적하고 계산 결과를 상대에게 보내는 구조로 바꾸니, 중복 연산도 없어지고 화면 전환 지연도 사라졌습니다.",
       ],
+    },
+    gpws: {
+      overspeedLabel: "OVERSPEED — 목표보다 빠름",
+      normalLabel: "정상 범위",
+      sinkRateLabel: "SINK RATE — 목표보다 느림",
+      minimumsLabel: "MINIMUMS — 목표 거리 50m 전",
+      quote:
+        "목표 페이스 ± 허용 오차를 벗어나면 GPWS가 즉시 반응해야 하므로, 위치가 업데이트될 때마다 현재 페이스를 계산해 SINK RATE·OVERSPEED 여부를 판정합니다. 목표 거리 50m 전부터는 페이스와 무관하게 MINIMUMS를 우선 적용해, 완주가 임박했다는 신호를 놓치지 않도록 했습니다.",
     },
     stack: [
       { label: "SwiftUI", role: "UI" },
@@ -388,6 +399,74 @@ export const ko: SiteDictionary = {
       ],
       verdict:
         "HKWorkoutSession이 healthd(시스템 데몬) 레벨 자원이라 앱 코드로는 완전한 제어가 불가능하다고 결론. os_log/Console.app 기반으로 원인을 정확히 특정했지만, 부작용 없이는 해결이 불가능해 v1.0에서는 known limitation으로 명시했다.",
+    },
+    {
+      id: "mirroring-race-condition",
+      number: "07",
+      title: "Watch 주도 미러링 레이스 컨디션",
+      status: "RESOLVED",
+      squawk: "Watch 주도 러닝에서만 GPS가 아예 안 잡힘, 코드 변경 없이 재빌드만 해도 증상이 반대로 옮겨감",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "증상 이동",
+          body: "앱 주도 미러링에서 나타나던 증상(Watch 표시 안 됨, 종료 동기화 안 됨)이 코드 수정 없이 재빌드만으로 사라지고, 대신 Watch 주도 미러링에서 location 자체가 안 잡히는 새 증상이 나타났다.",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "비동기 대입과 동기 체크의 충돌",
+          body: "updatePhase(.cruise) 안의 startOrigin = .local 대입이 Task {} 안에 있어 비동기로 실행된다. 바로 다음 줄 start()는 이 값을 한 번, 동기적으로만 확인하기 때문에 대입이 끝나기 전에 체크가 먼저 실행되면 GPS가 그 러닝 내내 켜지지 않는다.",
+        },
+        {
+          tag: "DISCOVERY",
+          title: "iPhone이 무사했던 이유",
+          body: "동일한 호출 순서인데도 iPhone은 멀쩡했다. TakeoffView에 Pre-flight Check를 붙이며 prepareTracking()을 미리 호출해 GPS를 켜두고 있었기 때문에, start() 시점엔 이미 GPS가 돌고 있어 레이스 자체를 밟지 않았던 것. Watch만 이 사전 단계가 없어 그대로 노출됐다.",
+        },
+        {
+          tag: "ACTION",
+          title: "레이스 자체를 제거",
+          body: "Watch에도 iPhone과 동일한 prepareTracking()/stopTracking() 패턴을 도입. GPS 시작 로직을 start()에서 완전히 분리해, start()는 더 이상 startOrigin을 확인하지 않도록 재구성했다.",
+        },
+        {
+          tag: "RESULT",
+          title: "플랫폼 구조 통일",
+          body: "didStartFlight 플래그로 ROTATE를 통한 정상 진입과 카운트다운 중 이탈을 구분. iOS와 Watch가 동일한 아키텍처를 갖게 되어 이후 두 플랫폼 코드를 나란히 봐도 헷갈릴 일이 줄었다.",
+        },
+      ],
+    },
+    {
+      id: "pace-corruption",
+      number: "08",
+      title: "저장된 inf 페이스가 캘린더 평균을 오염시킨 문제",
+      status: "RESOLVED",
+      squawk: "실시간 화면 페이스는 정상인데, 월별/주간 평균 페이스가 전부 --:--로 나옴",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "화면과 저장의 불일치",
+          body: "PFD 실시간 페이스 계산에는 이미 isFinite 가드가 있어 화면엔 항상 --'--\"로 안전하게 표시됐다. 하지만 SwiftData에 저장하는 saveRunningData()에는 같은 가드가 빠져 있었다.",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "inf의 전파",
+          body: "거리가 0이면 Double은 크래시 없이 inf를 반환한다. 이 inf가 그대로 저장되고, 월별 평균을 구하는 reduce 연산에 inf가 하나만 섞여도 합계 전체가 inf로 오염되어 그 달 평균이 통째로 깨졌다.",
+        },
+        {
+          tag: "ACTION",
+          title: "저장·집계 이중 방어",
+          body: "저장 시점에 isFinite 가드를 추가해 계산 불가능한 값은 0으로 저장하고, 집계 시점에도 isFinite 필터를 한 번 더 걸었다. 동일 계산식이 있던 Watch 쪽 WatchPFDView.swift에도 같은 가드를 적용했다.",
+        },
+        {
+          tag: "FINDING",
+          title: "후속 문제",
+          body: "러닝 시작 직후 바로 종료하면 페이스가 비정상적으로 크게 튀는 별도 문제를 발견했다. inf는 아니지만 시간 대비 거리가 극단적으로 작아 나온 비현실적인 유한값이라 isFinite 가드로는 걸러지지 않았다.",
+        },
+        {
+          tag: "RESULT",
+          title: "임계값 도입과 데이터 정리",
+          body: "최소 유효 거리(50m)와 현실적인 페이스 상한선(30 min/km)을 추가로 걸었다. 이미 오염된 레코드 14개는 일회성 정리 스크립트로 삭제. 화면에 안 보이면 괜찮다가 아니라 저장되는 값 자체의 안전성을 확인해야 한다는 교훈을 얻었다.",
+        },
+      ],
     },
   ],
 };

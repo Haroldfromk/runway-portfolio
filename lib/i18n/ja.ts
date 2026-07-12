@@ -18,8 +18,10 @@ export const ja: SiteDictionary = {
       "A320Fの整備士出身の開発者が作ったiOSランニングトラッカー。",
       "GPS、心拍数、ケイデンスを計器のように読み取り、ペースのズレをGPWS警報でお知らせします。",
     ],
+    comingSoon: "App Store 公開準備中",
     badgeOs: "iOS 26+ · watchOS 11.5+",
     badgeStack: "SwiftUI · Actor · AsyncStream",
+    androidBadge: "Android移植進行中",
   },
   concept: {
     eyebrow: "Flight Operations",
@@ -83,16 +85,17 @@ export const ja: SiteDictionary = {
   },
   architecture: {
     eyebrow: "Under The Hood",
-    title: "3つの設計判断",
+    title: "4つの設計判断",
     description: [
-      "並行処理、状態管理、端末間の同期 - RunWayを作る上で",
-      "最も悩んだ3つのポイントです。",
+      "並行処理、状態管理、端末間の同期、GPWS判定ロジック - RunWayを",
+      "作る上で最も悩んだ4つのポイントです。",
     ],
     quoteLabel: "なぜこの設計にしたのか",
     tabs: [
       { id: "actor", label: "RunningCenter Actor", eyebrow: "並行処理" },
       { id: "phase", label: "FlightPhase 状態機械", eyebrow: "状態管理" },
       { id: "mirroring", label: "Watch ミラーリング", eyebrow: "端末間同期" },
+      { id: "gpws", label: "GPWS 判定ロジック", eyebrow: "ペース逸脱の検知" },
     ],
     actor: {
       quote:
@@ -112,6 +115,14 @@ export const ja: SiteDictionary = {
         "最初はミラーリング中でもiPhoneとWatchがそれぞれ独自にGPSを取得していました。",
         "主導端末(startOrigin)のみが位置を追跡し、計算結果を相手に送る構造に変更したことで、重複した計算がなくなり、画面切り替えの遅延も解消されました。",
       ],
+    },
+    gpws: {
+      overspeedLabel: "OVERSPEED — 目標より速い",
+      normalLabel: "許容範囲内",
+      sinkRateLabel: "SINK RATE — 目標より遅い",
+      minimumsLabel: "MINIMUMS — 目標まで残り50m",
+      quote:
+        "目標ペース ± 許容誤差を外れた瞬間にGPWSが反応する必要があるため、位置情報が更新されるたびに現在のペースを計算し、SINK RATEかOVERSPEEDかを判定します。目標距離まで残り50mを切ったら、ペースに関係なくMINIMUMSを優先することで、ゴール間近であるサインを見逃さないようにしました。",
     },
     stack: [
       { label: "SwiftUI", role: "UI" },
@@ -388,6 +399,74 @@ export const ja: SiteDictionary = {
       ],
       verdict:
         "HKWorkoutSessionはhealthd(システムデーモン)レベルのリソースであり、アプリコードでは完全な制御が不可能だと結論。os_log/Console.appベースで原因を正確に特定したが、副作用なしでの解決が不可能だったためv1.0ではknown limitationとして明記した。",
+    },
+    {
+      id: "mirroring-race-condition",
+      number: "07",
+      title: "Watch主導ミラーリングのレースコンディション",
+      status: "RESOLVED",
+      squawk: "Watch主導のランニングでのみGPSが全く取得できず、コード変更なしの再ビルドだけで症状が逆側に移動",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "症状の移動",
+          body: "iPhone主導のミラーリングで出ていた症状(Watch表示が更新されない、終了が同期しない)が、コード変更なしの再ビルドだけで消えた。代わりにWatch主導のミラーリングで、位置情報が全く取得できないという新しい症状が現れた。",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "非同期の代入と同期チェックの衝突",
+          body: "updatePhase(.cruise)内のstartOrigin = .localという代入がTask {}の中にあり非同期で実行される。すぐ次の行のstart()はこの値を一度だけ同期的にチェックするため、代入が完了する前にチェックが走ると、そのランニング中ずっとGPSが起動しない。",
+        },
+        {
+          tag: "DISCOVERY",
+          title: "iPhoneが無事だった理由",
+          body: "同じ呼び出し順序なのにiPhoneは問題なかった。TakeoffViewにPre-flight Checkを追加した際にprepareTracking()を先に呼ぶようにしていたため、start()が実行される時点ですでにGPSが動いており、レース自体が発生しなかった。Watchにはこの事前ステップがなく、そのまま影響を受けていた。",
+        },
+        {
+          tag: "ACTION",
+          title: "レース自体を排除",
+          body: "WatchにもiPhoneと同じprepareTracking()/stopTracking()パターンを導入。GPS起動ロジックをstart()から完全に分離し、start()がstartOriginを一切参照しない構造に変更した。",
+        },
+        {
+          tag: "RESULT",
+          title: "プラットフォーム構造の統一",
+          body: "didStartFlightフラグで、ROTATEによる正常な開始とカウントダウン中の離脱を区別。iOSとWatchが同じアーキテクチャになり、以降両プラットフォームのコードを並べて見ても混乱しにくくなった。",
+        },
+      ],
+    },
+    {
+      id: "pace-corruption",
+      number: "08",
+      title: "保存されたinfペースがカレンダーの月平均を汚染した問題",
+      status: "RESOLVED",
+      squawk: "リアルタイム画面のペースは正常なのに、月間・週間の平均ペースが常に--:--と表示される",
+      steps: [
+        {
+          tag: "FINDING",
+          title: "画面と保存値の不一致",
+          body: "PFDのリアルタイムペース計算にはすでにisFiniteガードがあり、画面には計算不能時も安全に--'--\"と表示されていた。しかしSwiftDataに保存するsaveRunningData()には同じガードが抜けていた。",
+        },
+        {
+          tag: "ROOT CAUSE",
+          title: "infの伝播",
+          body: "距離が0だとDoubleはクラッシュせずinfを返す。このinfがそのまま保存され、月平均を求めるreduce演算にinfが一つ混ざるだけで合計全体がinfに汚染され、その月の平均が丸ごと壊れていた。",
+        },
+        {
+          tag: "ACTION",
+          title: "保存・集計の二重防御",
+          body: "保存時にisFiniteガードを追加し、計算不能な値は0として保存。集計時にもisFiniteフィルタをもう一段かけた。同じ計算式を持つWatch側のWatchPFDView.swiftにも同様のガードを適用した。",
+        },
+        {
+          tag: "FINDING",
+          title: "後続の問題",
+          body: "ランニング開始直後にすぐ終了すると、ペースが異常に跳ね上がる別の問題を発見。infではなく、時間に対して距離が極端に小さいことで生じた非現実的な有限値だったため、isFiniteガードでは検出できなかった。",
+        },
+        {
+          tag: "RESULT",
+          title: "閾値の導入とデータ整理",
+          body: "最小有効距離(50m)と現実的なペース上限(30 min/km)を追加。すでに汚染されていた14件のレコードは、使い捨てのクリーンアップスクリプトで削除した。「画面に見えなければ問題ない」ではなく、保存される値自体の安全性を確認すべきだという教訓を得た。",
+        },
+      ],
     },
   ],
 };
