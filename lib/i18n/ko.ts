@@ -117,10 +117,10 @@ export const ko: SiteDictionary = {
       ],
     },
     gpws: {
-      overspeedLabel: "OVERSPEED — 목표보다 빠름",
+      overspeedLabel: "OVERSPEED - 목표보다 빠름",
       normalLabel: "정상 범위",
-      sinkRateLabel: "SINK RATE — 목표보다 느림",
-      minimumsLabel: "MINIMUMS — 목표 거리 50m 전",
+      sinkRateLabel: "SINK RATE - 목표보다 느림",
+      minimumsLabel: "MINIMUMS - 목표 거리 50m 전",
       quote:
         "목표 페이스 ± 허용 오차를 벗어나면 GPWS가 즉시 반응해야 하므로, 위치가 업데이트될 때마다 현재 페이스를 계산해 SINK RATE·OVERSPEED 여부를 판정합니다. 목표 거리 50m 전부터는 페이스와 무관하게 MINIMUMS를 우선 적용해, 완주가 임박했다는 신호를 놓치지 않도록 했습니다.",
     },

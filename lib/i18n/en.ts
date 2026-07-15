@@ -117,10 +117,10 @@ export const en: SiteDictionary = {
       ],
     },
     gpws: {
-      overspeedLabel: "OVERSPEED — faster than target",
+      overspeedLabel: "OVERSPEED - faster than target",
       normalLabel: "Within tolerance",
-      sinkRateLabel: "SINK RATE — slower than target",
-      minimumsLabel: "MINIMUMS — last 50m before target",
+      sinkRateLabel: "SINK RATE - slower than target",
+      minimumsLabel: "MINIMUMS - last 50m before target",
       quote:
         "GPWS has to react the instant pace drifts outside the target ± tolerance, so every location update recalculates the current pace to check for SINK RATE or OVERSPEED. Inside the last 50m before the target distance, MINIMUMS takes priority over pace, so the 'almost there' signal never gets missed.",
     },

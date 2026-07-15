@@ -117,10 +117,10 @@ export const ja: SiteDictionary = {
       ],
     },
     gpws: {
-      overspeedLabel: "OVERSPEED — 目標より速い",
+      overspeedLabel: "OVERSPEED - 目標より速い",
       normalLabel: "許容範囲内",
-      sinkRateLabel: "SINK RATE — 目標より遅い",
-      minimumsLabel: "MINIMUMS — 目標まで残り50m",
+      sinkRateLabel: "SINK RATE - 目標より遅い",
+      minimumsLabel: "MINIMUMS - 目標まで残り50m",
       quote:
         "目標ペース ± 許容誤差を外れた瞬間にGPWSが反応する必要があるため、位置情報が更新されるたびに現在のペースを計算し、SINK RATEかOVERSPEEDかを判定します。目標距離まで残り50mを切ったら、ペースに関係なくMINIMUMSを優先することで、ゴール間近であるサインを見逃さないようにしました。",
     },
